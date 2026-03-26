@@ -1,4 +1,4 @@
-# brain.js
+# neuroviz
 
 **[English](#english) | [中文](#中文)**
 
@@ -6,7 +6,7 @@
 
 <a name="english"></a>
 
-# brain.js — Brain Imaging Visualization Library
+# neuroviz — Brain Imaging Visualization Library
 
 A WebGL-based brain imaging visualization library built on Three.js. Supports 3D surface rendering (GIfTI, FreeSurfer, MNI OBJ) and 2D volume slice viewing (NIfTI), with overlay color mapping, vertex annotations, and interactive controls.
 
@@ -26,7 +26,7 @@ A WebGL-based brain imaging visualization library built on Three.js. Supports 3D
 ## Installation
 
 ```bash
-npm install brain.js
+npm install neuroviz
 ```
 
 > **Note:** Three.js r154 is bundled inside the package. No additional peer dependencies are required.
@@ -601,7 +601,7 @@ MIT
 
 <a name="中文"></a>
 
-# brain.js — 大脑影像可视化库
+# neuroviz — 大脑影像可视化库
 
 基于 Three.js 的 WebGL 大脑影像可视化库。支持三维表面渲染（GIfTI、FreeSurfer、MNI OBJ）和二维体积切片查看（NIfTI），提供 Overlay 颜色映射、顶点标记点管理和交互控制。
 
@@ -621,7 +621,7 @@ MIT
 ## 安装
 
 ```bash
-npm install brain.js
+npm install neuroviz
 ```
 
 > **注意：** Three.js r154 已打包在库内，无需额外安装任何依赖。
