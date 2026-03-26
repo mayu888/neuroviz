@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>neuroviz — Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 0 24px;
+      height: 52px;
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      flex-shrink: 0;
+    }
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #a78bfa;
+      letter-spacing: -0.5px;
+    }
+    header h1 span { color: #64748b; font-weight: 400; }
+
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+    }
+    .tab-btn {
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { background: #2d3148; color: #e2e8f0; }
+    .tab-btn.active { background: #4c1d95; color: #a78bfa; }
+
+    /* ── Main layout ── */
+    main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .tab-panel { display: none; width: 100%; }
+    .tab-panel.active { display: flex; }
+
+    /* ── Surface tab ── */
+    #surface-panel {
+      flex-direction: row;
+    }
+
+    #surface-viewer {
+      flex: 1;
+      position: relative;
+      background: #000;
+    }
+
+    #surface-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: #000;
+      z-index: 10;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #2d3148;
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #surface-loading p { font-size: 13px; color: #64748b; }
+
+    /* ── Surface sidebar ── */
+    .sidebar {
+      width: 260px;
+      background: #1a1d27;
+      border-left: 1px solid #2d3148;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section {
+      padding: 16px;
+      border-bottom: 1px solid #2d3148;
+    }
+    .sidebar-section h3 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    /* View buttons */
+    .view-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .view-btn {
+      padding: 7px 0;
+      background: #2d3148;
+      border: 1px solid #3d4166;
+      border-radius: 6px;
+      color: #cbd5e1;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .view-btn:hover { background: #3d4166; color: #e2e8f0; }
+    .view-btn.active { background: #4c1d95; border-color: #6d28d9; color: #a78bfa; }
+
+    /* Controls */
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+    .control-row:last-child { margin-bottom: 0; }
+    .control-row label {
+      font-size: 13px;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: #a78bfa;
+      cursor: pointer;
+    }
+    .range-val {
+      font-size: 12px;
+      color: #64748b;
+      width: 32px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .toggle-row:last-child { margin-bottom: 0; }
+    .toggle-row label { font-size: 13px; color: #94a3b8; }
+
+    .toggle {
+      position: relative;
+      width: 36px;
+      height: 20px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #2d3148;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      left: 3px; top: 3px;
+      background: #64748b;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: #4c1d95; }
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(16px);
+      background: #a78bfa;
+    }
+
+    /* Vertex info */
+    .info-box {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+      color: #94a3b8;
+    }
+    .info-row span:last-child { color: #e2e8f0; font-family: monospace; }
+    .info-hint { font-size: 12px; color: #475569; text-align: center; padding: 8px 0; }
+
+    /* Annotations */
+    .annotation-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .annotation-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .annotation-item:hover { border-color: #4c1d95; }
+    .annotation-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .annotation-name { flex: 1; color: #cbd5e1; }
+    .annotation-del {
+      color: #475569;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .annotation-del:hover { color: #f87171; }
+    .annotation-empty { font-size: 12px; color: #475569; text-align: center; padding: 8px 0; }
+
+    /* Action button */
+    .action-btn {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #3d4166;
+      background: #2d3148;
+      color: #cbd5e1;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-top: 8px;
+    }
+    .action-btn:hover { background: #3d4166; color: #e2e8f0; }
+    .action-btn:first-child { margin-top: 0; }
+
+    /* ── Volume tab ── */
+    #volume-panel {
+      flex-direction: row;
+    }
+
+    .volume-canvases {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 2px;
+      background: #2d3148;
+      position: relative;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .canvas-label {
+      position: absolute;
+      top: 8px; left: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: rgba(255,255,255,0.4);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .canvas-wrap canvas {
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+    }
+
+    .volume-info-box {
+      grid-column: 2;
+      grid-row: 2;
+      background: #0f1117;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .vol-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      padding: 20px 24px;
+    }
+    .vol-stat-group { }
+    .vol-stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #475569;
+      margin-bottom: 4px;
+    }
+    .vol-stat-values {
+      display: flex;
+      gap: 12px;
+    }
+    .vol-stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .vol-stat-axis {
+      font-size: 10px;
+      color: #64748b;
+    }
+    .vol-stat-num {
+      font-size: 16px;
+      font-weight: 600;
+      font-family: monospace;
+      color: #e2e8f0;
+    }
+    .vol-divider {
+      height: 1px;
+      background: #2d3148;
+    }
+    .vol-value-big {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: monospace;
+      color: #a78bfa;
+    }
+    .vol-value-label {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    #volume-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: #0f1117;
+      z-index: 10;
+    }
+
+    /* Volume sidebar */
+    select {
+      width: 100%;
+      padding: 6px 8px;
+      background: #2d3148;
+      border: 1px solid #3d4166;
+      border-radius: 6px;
+      color: #cbd5e1;
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+    }
+    select:focus { border-color: #6d28d9; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>neuroviz <span>demo</span></h1>
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="surface">Surface Viewer</button>
+    <button class="tab-btn" data-tab="volume">Volume Viewer</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ══════════════════ SURFACE TAB ══════════════════ -->
+  <div id="surface-panel" class="tab-panel active">
+
+    <div id="surface-viewer">
+      <div id="surface-loading">
+        <div class="spinner"></div>
+        <p>Loading surface model…</p>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+
+      <!-- View presets -->
+      <div class="sidebar-section">
+        <h3>View</h3>
+        <div class="view-grid">
+          <button class="view-btn" data-view="lateral">Lateral</button>
+          <button class="view-btn" data-view="medial">Medial</button>
+          <button class="view-btn" data-view="superior">Superior</button>
+          <button class="view-btn" data-view="inferior">Inferior</button>
+          <button class="view-btn" data-view="anterior">Anterior</button>
+          <button class="view-btn" data-view="posterior">Posterior</button>
+        </div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="sidebar-section">
+        <h3>Appearance</h3>
+        <div class="control-row">
+          <label>Opacity</label>
+          <input type="range" id="s-opacity" min="0" max="1" step="0.01" value="1" />
+          <span class="range-val" id="s-opacity-val">1.0</span>
+        </div>
+        <div class="toggle-row">
+          <label>Wireframe</label>
+          <label class="toggle">
+            <input type="checkbox" id="s-wireframe" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <label>Dark background</label>
+          <label class="toggle">
+            <input type="checkbox" id="s-darkbg" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <button class="action-btn" id="s-export">Export PNG</button>
+      </div>
+
+      <!-- Vertex info -->
+      <div class="sidebar-section">
+        <h3>Vertex Info</h3>
+        <div id="s-vertex-empty" class="info-hint">Click on the surface to pick a vertex</div>
+        <div id="s-vertex-info" style="display:none">
+          <div class="info-box">
+            <div class="info-row"><span>Index</span><span id="v-index">—</span></div>
+            <div class="info-row"><span>X</span><span id="v-x">—</span></div>
+            <div class="info-row"><span>Y</span><span id="v-y">—</span></div>
+            <div class="info-row"><span>Z</span><span id="v-z">—</span></div>
+          </div>
+          <button class="action-btn" id="s-add-annotation">Add Annotation</button>
+        </div>
+      </div>
+
+      <!-- Annotations -->
+      <div class="sidebar-section" style="flex:1">
+        <h3>Annotations</h3>
+        <div id="annotation-list" class="annotation-list">
+          <div class="annotation-empty">No annotations yet</div>
+        </div>
+        <button class="action-btn" id="s-clear-annotations" style="margin-top:8px">Clear All</button>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- ══════════════════ VOLUME TAB ══════════════════ -->
+  <div id="volume-panel" class="tab-panel">
+
+    <div class="volume-canvases">
+      <div id="volume-loading">
+        <div class="spinner"></div>
+        <p>Loading volume…</p>
+      </div>
+
+      <div class="canvas-wrap">
+        <span class="canvas-label">Axial</span>
+        <canvas id="axial-canvas"></canvas>
+      </div>
+      <div class="canvas-wrap">
+        <span class="canvas-label">Coronal</span>
+        <canvas id="coronal-canvas"></canvas>
+      </div>
+      <div class="canvas-wrap">
+        <span class="canvas-label">Sagittal</span>
+        <canvas id="sagittal-canvas"></canvas>
+      </div>
+
+      <!-- Info panel (bottom-right cell) -->
+      <div class="volume-info-box">
+        <div class="vol-stats">
+          <div class="vol-stat-group">
+            <div class="vol-stat-label">Voxel Position</div>
+            <div class="vol-stat-values">
+              <div class="vol-stat-item">
+                <span class="vol-stat-axis">X (sag)</span>
+                <span class="vol-stat-num" id="vox-x">—</span>
+              </div>
+              <div class="vol-stat-item">
+                <span class="vol-stat-axis">Y (cor)</span>
+                <span class="vol-stat-num" id="vox-y">—</span>
+              </div>
+              <div class="vol-stat-item">
+                <span class="vol-stat-axis">Z (ax)</span>
+                <span class="vol-stat-num" id="vox-z">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="vol-divider"></div>
+          <div class="vol-stat-group">
+            <div class="vol-stat-label">World (mm)</div>
+            <div class="vol-stat-values">
+              <div class="vol-stat-item">
+                <span class="vol-stat-axis">X</span>
+                <span class="vol-stat-num" id="world-x">—</span>
+              </div>
+              <div class="vol-stat-item">
+                <span class="vol-stat-axis">Y</span>
+                <span class="vol-stat-num" id="world-y">—</span>
+              </div>
+              <div class="vol-stat-item">
+                <span class="vol-stat-axis">Z</span>
+                <span class="vol-stat-num" id="world-z">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="vol-divider"></div>
+          <div class="vol-stat-group">
+            <div class="vol-stat-label">Intensity</div>
+            <div class="vol-value-big" id="vox-value">—</div>
+            <div class="vol-value-label">voxel value</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Volume sidebar -->
+    <aside class="sidebar">
+
+      <div class="sidebar-section">
+        <h3>Window / Level</h3>
+        <div class="control-row">
+          <label>Level</label>
+          <input type="range" id="v-level" min="-1000" max="3000" step="1" value="500" />
+          <span class="range-val" id="v-level-val">500</span>
+        </div>
+        <div class="control-row">
+          <label>Width</label>
+          <input type="range" id="v-width" min="1" max="4000" step="1" value="1000" />
+          <span class="range-val" id="v-width-val">1000</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Colormap</h3>
+        <select id="v-colormap">
+          <option value="gray">Gray</option>
+          <option value="hot">Hot</option>
+          <option value="cool">Cool</option>
+          <option value="viridis">Viridis</option>
+          <option value="jet">Jet</option>
+        </select>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Navigate</h3>
+        <div class="control-row">
+          <label>X (sag)</label>
+          <input type="range" id="nav-x" min="0" max="255" step="1" value="0" />
+          <span class="range-val" id="nav-x-val">0</span>
+        </div>
+        <div class="control-row">
+          <label>Y (cor)</label>
+          <input type="range" id="nav-y" min="0" max="255" step="1" value="0" />
+          <span class="range-val" id="nav-y-val">0</span>
+        </div>
+        <div class="control-row">
+          <label>Z (ax)</label>
+          <input type="range" id="nav-z" min="0" max="255" step="1" value="0" />
+          <span class="range-val" id="nav-z-val">0</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Display</h3>
+        <div class="toggle-row">
+          <label>Show cursor</label>
+          <label class="toggle">
+            <input type="checkbox" id="v-cursor" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+</main>
+
+<script type="module">
+  import {
+    SurfaceViewer,
+    VolumeViewer,
+    setWorkerBaseUrl,
+  } from '../dist/neuroviz.esm.js';
+
+  // Workers are in dist/
+  setWorkerBaseUrl('../dist/');
+
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  TAB SWITCHING
+  // ═══════════════════════════════════════════════════════════════════════
+  let volumeInitialized = false;
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab + '-panel').classList.add('active');
+
+      if (btn.dataset.tab === 'volume' && !volumeInitialized) {
+        volumeInitialized = true;
+        initVolume();
+      }
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  SURFACE VIEWER
+  // ═══════════════════════════════════════════════════════════════════════
+  const surfaceViewer = new SurfaceViewer(document.getElementById('surface-viewer'));
+
+  let currentHandle = null;
+  let currentAnnotations = null;
+  let lastVertex = null;
+  let annotationCount = 0;
+  const annotationColors = [0xa78bfa, 0x34d399, 0xfbbf24, 0xf87171, 0x60a5fa];
+
+  // Load surface
+  (async () => {
+    try {
+      const { handle, annotations } = await surfaceViewer.load({
+        model:    { url: './file/surface-file/test-1/model.gz',       name: 'brain' },
+        overlay:  { url: './file/surface-file/test-1/overlay.txt.gz' },
+        colorMap: { url: './file/surface-file/test-1/color-map.txt'  },
+      });
+      currentHandle      = handle;
+      currentAnnotations = annotations;
+      document.getElementById('surface-loading').style.display = 'none';
+    } catch (err) {
+      const el = document.getElementById('surface-loading');
+      el.innerHTML = `<p style="color:#f87171">Failed to load: ${err.message}</p>`;
+    }
+  })();
+
+  // ── View buttons ─────────────────────────────────────────────────────
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      surfaceViewer.setView(btn.dataset.view);
+    });
+  });
+
+  // ── Opacity ──────────────────────────────────────────────────────────
+  const opacitySlider = document.getElementById('s-opacity');
+  const opacityVal    = document.getElementById('s-opacity-val');
+  opacitySlider.addEventListener('input', () => {
+    const v = parseFloat(opacitySlider.value);
+    opacityVal.textContent = v.toFixed(2);
+    if (currentHandle) currentHandle.setTransparency(v);
+  });
+
+  // ── Wireframe ────────────────────────────────────────────────────────
+  document.getElementById('s-wireframe').addEventListener('change', (e) => {
+    surfaceViewer.setWireframe(e.target.checked);
+  });
+
+  // ── Background ───────────────────────────────────────────────────────
+  document.getElementById('s-darkbg').addEventListener('change', (e) => {
+    surfaceViewer.setClearColor(e.target.checked ? 0x000000 : 0xffffff);
+  });
+
+  // ── Export PNG ───────────────────────────────────────────────────────
+  document.getElementById('s-export').addEventListener('click', () => {
+    const url = surfaceViewer.canvasDataURL();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'neuroviz-surface.png';
+    a.click();
+  });
+
+  // ── Vertex click ─────────────────────────────────────────────────────
+  surfaceViewer.on('vertexClick', (data) => {
+    lastVertex = data;
+    document.getElementById('s-vertex-empty').style.display  = 'none';
+    document.getElementById('s-vertex-info').style.display   = 'block';
+    document.getElementById('v-index').textContent = data.index;
+    document.getElementById('v-x').textContent = data.point.x.toFixed(2);
+    document.getElementById('v-y').textContent = data.point.y.toFixed(2);
+    document.getElementById('v-z').textContent = data.point.z.toFixed(2);
+  });
+
+  // ── Add annotation ───────────────────────────────────────────────────
+  document.getElementById('s-add-annotation').addEventListener('click', () => {
+    if (!lastVertex || !currentAnnotations) return;
+    const color = annotationColors[annotationCount % annotationColors.length];
+    const name  = `Point ${annotationCount + 1}`;
+    const ann   = currentAnnotations.add(lastVertex.index, { color, name });
+    if (!ann) return;
+    annotationCount++;
+    renderAnnotationList();
+  });
+
+  // ── Clear annotations ────────────────────────────────────────────────
+  document.getElementById('s-clear-annotations').addEventListener('click', () => {
+    currentAnnotations?.reset();
+    annotationCount = 0;
+    renderAnnotationList();
+  });
+
+  function renderAnnotationList() {
+    const list = document.getElementById('annotation-list');
+    list.innerHTML = '';
+    const items = [];
+    currentAnnotations?.forEach(a => items.push(a));
+
+    if (items.length === 0) {
+      list.innerHTML = '<div class="annotation-empty">No annotations yet</div>';
+      return;
+    }
+
+    items.forEach(a => {
+      const hex = '#' + a.color.toString(16).padStart(6, '0');
+      const div = document.createElement('div');
+      div.className = 'annotation-item';
+      div.innerHTML = `
+        <span class="annotation-dot" style="background:${hex}"></span>
+        <span class="annotation-name">${a.name}</span>
+        <span class="annotation-del" data-vertex="${a.vertex}">✕</span>
+      `;
+      div.addEventListener('click', (e) => {
+        if (e.target.classList.contains('annotation-del')) {
+          currentAnnotations.remove(a.vertex);
+          renderAnnotationList();
+        } else {
+          currentAnnotations.activate(a.vertex);
+        }
+      });
+      list.appendChild(div);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  VOLUME VIEWER
+  // ═══════════════════════════════════════════════════════════════════════
+  async function initVolume() {
+    const axial    = document.getElementById('axial-canvas');
+    const coronal  = document.getElementById('coronal-canvas');
+    const sagittal = document.getElementById('sagittal-canvas');
+
+    const volumeViewer = new VolumeViewer(axial, coronal, sagittal, {
+      highlightColor:  '#a78bfa',
+      backgroundColor: '#000000',
+    });
+
+    try {
+      await volumeViewer.load({ url: './file/volume-file/test-1.nii.gz' });
+      document.getElementById('volume-loading').style.display = 'none';
+    } catch (err) {
+      const el = document.getElementById('volume-loading');
+      el.innerHTML = `<p style="color:#f87171">Failed to load: ${err.message}</p>`;
+      return;
+    }
+
+    // Initialise navigation sliders from volume dimensions
+    const volume = volumeViewer.getVolume();
+    const hdr    = volume.header;
+
+    const navX = document.getElementById('nav-x');
+    const navY = document.getElementById('nav-y');
+    const navZ = document.getElementById('nav-z');
+    navX.max = hdr.xspace.space_length - 1;
+    navY.max = hdr.yspace.space_length - 1;
+    navZ.max = hdr.zspace.space_length - 1;
+
+    // Set sliders to initial (center) position
+    const pos = volumeViewer.getPosition();
+    navX.value = pos.xspace;
+    navY.value = pos.yspace;
+    navZ.value = pos.zspace;
+    document.getElementById('nav-x-val').textContent = pos.xspace;
+    document.getElementById('nav-y-val').textContent = pos.yspace;
+    document.getElementById('nav-z-val').textContent = pos.zspace;
+
+    updateVolumeStats(volumeViewer);
+
+    // ── Position change event ───────────────────────────────────────────
+    volumeViewer.on('positionchange', (p) => {
+      navX.value = p.xspace;
+      navY.value = p.yspace;
+      navZ.value = p.zspace;
+      document.getElementById('nav-x-val').textContent = p.xspace;
+      document.getElementById('nav-y-val').textContent = p.yspace;
+      document.getElementById('nav-z-val').textContent = p.zspace;
+      updateVolumeStats(volumeViewer);
+    });
+
+    // ── Navigation sliders ──────────────────────────────────────────────
+    navX.addEventListener('input', () => {
+      document.getElementById('nav-x-val').textContent = navX.value;
+      volumeViewer.setPosition({ xspace: parseInt(navX.value) });
+    });
+    navY.addEventListener('input', () => {
+      document.getElementById('nav-y-val').textContent = navY.value;
+      volumeViewer.setPosition({ yspace: parseInt(navY.value) });
+    });
+    navZ.addEventListener('input', () => {
+      document.getElementById('nav-z-val').textContent = navZ.value;
+      volumeViewer.setPosition({ zspace: parseInt(navZ.value) });
+    });
+
+    // ── Window / Level ──────────────────────────────────────────────────
+    const { level: initLevel, width: initWidth } = volumeViewer.getWindowLevel();
+    const levelSlider = document.getElementById('v-level');
+    const widthSlider = document.getElementById('v-width');
+    levelSlider.value = initLevel;
+    widthSlider.value = initWidth;
+    document.getElementById('v-level-val').textContent = initLevel;
+    document.getElementById('v-width-val').textContent = initWidth;
+
+    levelSlider.addEventListener('input', () => {
+      document.getElementById('v-level-val').textContent = levelSlider.value;
+      volumeViewer.setWindowLevel(parseInt(levelSlider.value), parseInt(widthSlider.value));
+    });
+    widthSlider.addEventListener('input', () => {
+      document.getElementById('v-width-val').textContent = widthSlider.value;
+      volumeViewer.setWindowLevel(parseInt(levelSlider.value), parseInt(widthSlider.value));
+    });
+
+    // ── Colormap ────────────────────────────────────────────────────────
+    document.getElementById('v-colormap').addEventListener('change', (e) => {
+      volumeViewer.setColormap(e.target.value);
+    });
+
+    // ── Cursor toggle ───────────────────────────────────────────────────
+    document.getElementById('v-cursor').addEventListener('change', (e) => {
+      volumeViewer.setShowCursor(e.target.checked);
+    });
+
+  }
+
+  function updateVolumeStats(viewer) {
+    const pos   = viewer.getPosition();
+    const world = viewer.getWorldPosition();
+    const val   = viewer.getVoxelValue();
+
+    document.getElementById('vox-x').textContent = pos.xspace;
+    document.getElementById('vox-y').textContent = pos.yspace;
+    document.getElementById('vox-z').textContent = pos.zspace;
+
+    if (world) {
+      document.getElementById('world-x').textContent = world.x.toFixed(1);
+      document.getElementById('world-y').textContent = world.y.toFixed(1);
+      document.getElementById('world-z').textContent = world.z.toFixed(1);
+    }
+
+    document.getElementById('vox-value').textContent =
+      val !== null ? val.toFixed(2) : '—';
+  }
+</script>
+</body>
+</html>

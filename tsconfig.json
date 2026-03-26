@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES6",                      // 指定生成的 JavaScript 目标版本为 ES6。
+    "module": "ESNext",                  // 使用 ESNext 模块规范，适用于现代项目。
+    "declaration": true,                  // 生成 `.d.ts` 类型声明文件。
+    "declarationMap": true,               // 生成声明文件的源映射，用于调试。
+    "sourceMap": true,                   // 为生成的 JavaScript 文件启用源映射。
+    "outDir": "dist",                    // 指定编译输出目录为 dist。
+    "rootDir": "src",                    // 指定输入文件的根目录为 src。
+    "strict": true,                      // 启用所有严格类型检查选项。
+    "moduleResolution": "node",         // 使用 Node.js 的模块解析策略。
+    "allowSyntheticDefaultImports": true, // 允许默认导入非 ES 模块（如 CommonJS 模块）。
+    "esModuleInterop": true,            // 启用 ES 模块与 CommonJS 模块的互操作性。
+    "skipLibCheck": true,               // 跳过对声明文件的类型检查以加快编译速度。
+    "forceConsistentCasingInFileNames": true, // 强制文件名一致大小写。
+    "resolveJsonModule": true,          // 允许导入 JSON 文件。
+    "allowJs": true,                    // 允许编译 .js 文件。
+    "checkJs": false,                   // 禁用对 .js 文件的类型检查。
+    "isolatedModules": true,            // 启用独立模块编译，用于与 Babel 集成。
+    "lib": ["DOM", "ESNext"],           // 包含 DOM 和最新的 JavaScript 特性库。
+    // "noImplicitAny": true,               // 禁止隐式的 `any` 类型（已经包含在 `strict` 中）。
+    "types": ["@types/three"], // 明确声明使用的类型
+  },
+  "include": ["src/**/*"],              // 指定包含的文件路径模式。
+  "exclude": ["node_modules", "dist"],  // 指定排除的文件夹。
+  "ts-node": {                          // ts-node 配置（可选）。
+    "transpileOnly": true               // 仅转译，不做类型检查（加快执行速度）。
+  },
+  "typeRoots": [
+    "node_modules/@types",
+    "./src/typings",
+  ]
+}

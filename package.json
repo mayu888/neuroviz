@@ -1,0 +1,57 @@
+{
+  "name": "neuroviz",
+  "version": "0.1.0",
+  "description": "A WebGL-based brain imaging visualization library supporting GIfTI, FreeSurfer, MNI OBJ, and NIfTI formats",
+  "main": "dist/bundle.umd.js",
+  "module": "dist/neuroviz.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/neuroviz.esm.js",
+      "require": "./dist/bundle.umd.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c && tsc -p tsconfig.types.json",
+    "dev": "rollup -c --watch",
+  },
+  "keywords": [
+    "brain",
+    "neuroscience",
+    "visualization",
+    "mri",
+    "nifti",
+    "gifti",
+    "dicom",
+    "freesurfer",
+    "three.js",
+    "webgl"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.1",
+    "@types/three": "^0.157.2",
+    "rollup": "^4.29.0",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@progress/pako-esm": "^1.0.1",
+    "gifti-reader-js": "^0.4.6",
+    "nifti-reader-js": "^0.8.0"
+  }
+}
