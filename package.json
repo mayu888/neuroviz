@@ -20,7 +20,7 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c && tsc -p tsconfig.types.json",
-    "dev": "rollup -c --watch",
+    "dev": "rollup -c --watch"
   },
   "keywords": [
     "brain",
@@ -34,11 +34,11 @@
     "three.js",
     "webgl"
   ],
-  "author": "",
+  "author": "mayu888",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/mayu888/neuroviz.git"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
@@ -47,7 +47,8 @@
     "@rollup/plugin-typescript": "^12.1.1",
     "@types/three": "^0.157.2",
     "rollup": "^4.29.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "tslib": "^2.8.1"
   },
   "dependencies": {
     "@progress/pako-esm": "^1.0.1",
